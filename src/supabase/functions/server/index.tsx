@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import * as kv from "./kv_store";
+
 const app = new Hono();
 
 // Enable logger
@@ -24,13 +25,27 @@ app.get("/make-server-c0e686a6/health", (c) => {
   return c.json({ status: "ok" });
 });
 
-const deno = (globalThis as {
-  Deno?: { serve?: (handler: (request: Request) => Response | Promise<Response>) => void };
-}).Deno;
+const startServer = async () => {
+  const deno = (globalThis as {
+    Deno?: { serve?: (handler: (request: Request) => Response | Promise<Response>) => void };
+  }).Deno;
 
-if (deno?.serve) {
-  deno.serve(app.fetch);
-}
+  if (deno?.serve) {
+    deno.serve(app.fetch);
+    return;
+  }
+
+  const { serve } = await import("@hono/node-server");
+  const portFromProcess =
+    typeof process !== "undefined" && process.env?.PORT ? Number(process.env.PORT) : undefined;
+  const port = Number.isFinite(portFromProcess) ? Number(portFromProcess) : 3000;
+  serve({ fetch: app.fetch, port });
+  console.log(`Server listening on port ${port}`);
+};
+
+startServer().catch((error) => {
+  console.error("Failed to start server", error);
+});
 
 export default app;
 export const fetch = app.fetch;
