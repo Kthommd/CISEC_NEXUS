@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import * as kv from "./kv_store.ts";
+import * as kv from "./kv_store.tsx";
 
 const app = new Hono();
 
